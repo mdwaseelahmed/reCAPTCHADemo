@@ -1,0 +1,65 @@
+﻿@page "/demo"
+@using System.ComponentModel.DataAnnotations;
+@using System.Net.Http
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
+@inject HttpClient Http
+@inject GooglereCaptchaService _googlereCaptchaService
+@using reCAPTCHADemo.Services;
+
+
+<EditForm Model="@_ContactFormModel" OnValidSubmit="OnSubmit">
+	<DataAnnotationsValidator />
+
+	<p>
+		<label for="Name">Name</label><br />
+		<InputText id="Name" @bind-Value="_ContactFormModel.Name" />
+		<ValidationMessage For="@(() => _ContactFormModel.Name)" />
+	</p>
+
+	<div class="mt-2">
+		<button id="submitBtn" class="btn btn-primary"
+				type="submit">
+			Submit
+		</button>
+	</div>
+</EditForm>
+
+<h1>reCAPTCHA Tocken</h1>
+@tocken
+
+
+@if (googleREspo != null)
+{
+	<h1>Status - (@googleREspo.success) </h1>
+	<h1>Score - (@googleREspo.score) </h1>
+}
+@code{
+	//public GooglereCaptchaService _googlereCaptchaService = new GooglereCaptchaService();
+	ContactFormModel _ContactFormModel = new ContactFormModel();
+	string tocken = "";
+	public GoogleREspo googleREspo = new GoogleREspo();
+
+	private async Task OnSubmit()
+	{
+		googleREspo = await _googlereCaptchaService.reVerify(tocken);
+	}
+
+	protected override async void OnAfterRender(bool firstRender)
+	{
+		if (firstRender)
+		{
+			tocken = await JSRuntime.InvokeAsync<string>("runCaptcha");
+			StateHasChanged();
+		}
+	}
+
+	class ContactFormModel
+	{
+		[MaxLength(100)]
+		public string Name { get; set; }
+
+		public string ReCaptcha { get; set; }
+	}
+}
